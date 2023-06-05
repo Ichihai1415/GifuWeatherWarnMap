@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.6.33712.159
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GifuWeatherWarnMap", "GifuWeatherWarnMap\GifuWeatherWarnMap.csproj", "{577ACCF2-4865-4682-AB03-C1FEE7D0EA7B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{577ACCF2-4865-4682-AB03-C1FEE7D0EA7B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{577ACCF2-4865-4682-AB03-C1FEE7D0EA7B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{577ACCF2-4865-4682-AB03-C1FEE7D0EA7B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{577ACCF2-4865-4682-AB03-C1FEE7D0EA7B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D954B026-E7B5-4174-855D-EE31A4A987D6}
+	EndGlobalSection
+EndGlobal
