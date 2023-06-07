@@ -32,19 +32,23 @@ namespace GifuWeatherWarnMap
             //https://www.data.jma.go.jp/developer/xml/feed/extra.xml
             //https://www.data.jma.go.jp/developer/xml/feed/extra_l.xml
             XmlDocument xml = new XmlDocument();
-            string URL = "";
+            string URL;
             while (true)
                 try
                 {
-                    Console.WriteLine("URLを入力してください。空白の場合Feedから");
+                    Console.WriteLine("URLを入力してください。空白の場合Feedから自動取得します。");
                     URL = Console.ReadLine();
+                    if (URL == "")
+                        URL = "https://www.data.jma.go.jp/developer/xml/feed/extra.xml";
                     xml.Load(URL);
                     break;
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Console.WriteLine(ex.Message);
                 }
+
+
             XmlNamespaceManager nsmgr = new XmlNamespaceManager(xml.NameTable);
             nsmgr.AddNamespace("jmx", "http://xml.kishou.go.jp/jmaxml1/");
             nsmgr.AddNamespace("jmx_eb", "http://xml.kishou.go.jp/jmaxml1/body/meteorology1/");
@@ -62,13 +66,16 @@ namespace GifuWeatherWarnMap
                 {
                     string Name = node.SelectSingleNode("jmx_si:Areas/jmx_si:Area/jmx_si:Name", nsmgr).InnerText;
                     string Code = node.SelectSingleNode("jmx_si:Areas/jmx_si:Area/jmx_si:Code", nsmgr).InnerText;
-                    string level = "注意報";
+                    string level;
                     if (node.InnerText.Contains("特別警報"))
                         level = "特別警報";
                     else if (node.InnerText.Contains("警報"))
                         level = "警報";
-                    if (!node.InnerText.Contains("解除"))
-                        CityCodeWarn.Add(Code, level);
+                    else if (node.InnerText.Contains("注意報"))
+                        level = "注意報";
+                    else
+                        continue;
+                    CityCodeWarn.Add(Code, level);
                 }
             }
             //35.142-36.458 ->35.8
