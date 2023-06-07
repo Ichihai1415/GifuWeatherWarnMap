@@ -27,12 +27,17 @@ namespace GifuWeatherWarnMap
         {
             //F:\色々\gifu-majorwarn-20180707.xml
             //https://www.data.jma.go.jp/developer/xml/data/20230602003308_0_VPWW54_210000.xml
+            //https://www.data.jma.go.jp/developer/xml/data/20230605112014_0_VPWW53_210000.xml
+
+            //https://www.data.jma.go.jp/developer/xml/feed/extra.xml
+            //https://www.data.jma.go.jp/developer/xml/feed/extra_l.xml
             XmlDocument xml = new XmlDocument();
+            string URL = "";
             while (true)
                 try
                 {
-                    Console.WriteLine("URLを入力してください。");
-                    string URL = Console.ReadLine();
+                    Console.WriteLine("URLを入力してください。空白の場合Feedから");
+                    URL = Console.ReadLine();
                     xml.Load(URL);
                     break;
                 }
@@ -62,7 +67,8 @@ namespace GifuWeatherWarnMap
                         level = "特別警報";
                     else if (node.InnerText.Contains("警報"))
                         level = "警報";
-                    CityCodeWarn.Add(Code, level);
+                    if (!node.InnerText.Contains("解除"))
+                        CityCodeWarn.Add(Code, level);
                 }
             }
             //35.142-36.458 ->35.8
