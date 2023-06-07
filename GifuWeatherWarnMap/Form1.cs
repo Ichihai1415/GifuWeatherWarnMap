@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Linq;
+using System.Threading;
 using System.Windows.Forms;
 using System.Xml;
 
@@ -47,26 +48,62 @@ namespace GifuWeatherWarnMap
                 {
                     Console.WriteLine(ex.Message);
                 }
-
-
             XmlNamespaceManager nsmgr = new XmlNamespaceManager(xml.NameTable);
+            nsmgr.AddNamespace("atom", "http://www.w3.org/2005/Atom");
+            if (URL == "https://www.data.jma.go.jp/developer/xml/feed/extra.xml" || URL == "https://www.data.jma.go.jp/developer/xml/feed/extra_l.xml")
+            {
+                bool stop = true;
+                while (stop)
+                    try
+                    {
+                        foreach (XmlNode node in xml.SelectNodes("atom:feed/atom:entry", nsmgr))
+                        {
+                            Console.WriteLine($"{node.SelectSingleNode("atom:title", nsmgr).InnerText}  {node.SelectSingleNode("atom:author/atom:name", nsmgr).InnerText}");
+                            if (node.SelectSingleNode("atom:title", nsmgr).InnerText == "気象警報・注意報（Ｈ２７）" && node.SelectSingleNode("atom:author/atom:name", nsmgr).InnerText == "岐阜地方気象台")
+                            {
+                                string URL2 = node.SelectSingleNode("atom:id", nsmgr).InnerText;
+                                Console.WriteLine(URL2);
+                                xml.Load(URL2);
+                                stop = false;
+                                break;
+                            }
+                        }
+                        if (stop)
+                            if (URL == "https://www.data.jma.go.jp/developer/xml/feed/extra.xml")
+                            {
+                                Console.WriteLine("見つかりませんでした。https://www.data.jma.go.jp/developer/xml/feed/extra_l.xmlで再試行します。");
+                                URL = "https://www.data.jma.go.jp/developer/xml/feed/extra_l.xml";
+                                xml.Load(URL);
+                            }
+                            else
+                            {
+                                Console.WriteLine("見つかりませんでした。");
+                                return;
+                            }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                    }
+            }
+
             nsmgr.AddNamespace("jmx", "http://xml.kishou.go.jp/jmaxml1/");
             nsmgr.AddNamespace("jmx_eb", "http://xml.kishou.go.jp/jmaxml1/body/meteorology1/");
             nsmgr.AddNamespace("jmx_ed", "http://xml.kishou.go.jp/jmaxml1/elementBasis1/");
             nsmgr.AddNamespace("jmx_si", "http://xml.kishou.go.jp/jmaxml1/informationBasis1/");
             nsmgr.AddNamespace("jmx_ws", "http://xml.kishou.go.jp/jmaxml1/warningBasis1/");
 
-            XmlNodeList nodes = xml.SelectNodes("jmx:Report/jmx_si:Head/jmx_si:Headline/jmx_si:Information[@type='気象警報・注意報（市町村等）']/jmx_si:Item", nsmgr);
+            //XmlNodeList nodes = xml.SelectNodes("jmx:Report/jmx_si:Head/jmx_si:Headline/jmx_si:Information[@type='気象警報・注意報（市町村等）']/jmx_si:Item", nsmgr);
             Dictionary<string, string> CityCodeWarn = new Dictionary<string, string>();
             Dictionary<string, string> CityWarnList = new Dictionary<string, string>();
-            foreach (XmlNode node in nodes)
+            foreach (XmlNode node in xml.SelectNodes("jmx:Report/jmx_si:Head/jmx_si:Headline/jmx_si:Information[@type='気象警報・注意報（市町村等）']/jmx_si:Item", nsmgr))
             {
                 XmlElement Areas = (XmlElement)node.SelectSingleNode("jmx_si:Areas", nsmgr);
                 if (Areas.GetAttribute("codeType") == "気象・地震・火山情報／市町村等")//いらないかも?
                 {
                     string Name = node.SelectSingleNode("jmx_si:Areas/jmx_si:Area/jmx_si:Name", nsmgr).InnerText;
                     string Code = node.SelectSingleNode("jmx_si:Areas/jmx_si:Area/jmx_si:Code", nsmgr).InnerText;
-                    string level;
+                    string level = "解除";
                     if (node.InnerText.Contains("特別警報"))
                         level = "特別警報";
                     else if (node.InnerText.Contains("警報"))
@@ -75,6 +112,7 @@ namespace GifuWeatherWarnMap
                         level = "注意報";
                     else
                         continue;
+                    Console.WriteLine($"{Name}  {level}");
                     CityCodeWarn.Add(Code, level);
                 }
             }
@@ -91,6 +129,7 @@ namespace GifuWeatherWarnMap
             Graphics g = Graphics.FromImage(bitmap);
             g.Clear(Color.FromArgb(0, 30, 60));
 
+            Console.WriteLine("都道府県描画開始");
             JObject geojson1 = JObject.Parse(Resources.AreaForecastLocalM_prefecture_GIS_0_5);
             GraphicsPath Maps = new GraphicsPath();
             Maps.Reset();
@@ -120,6 +159,7 @@ namespace GifuWeatherWarnMap
             g.FillPath(new SolidBrush(Color.FromArgb(30, 60, 90)), Maps);
             g.DrawPath(new Pen(Color.FromArgb(128, 255, 255, 255), 4), Maps);
 
+            Console.WriteLine("市区町村描画開始");
             JObject geojson2 = JObject.Parse(Resources.AreaInformationCity_weather_GIS_0_5_Name);
             Maps = new GraphicsPath();
             Maps.Reset();
@@ -180,6 +220,9 @@ namespace GifuWeatherWarnMap
             g.FillPath(new SolidBrush(Color.FromArgb(255, 0, 0)), Maps_Warn);
             g.FillPath(new SolidBrush(Color.FromArgb(128, 0, 128)), Maps_MajorWarn);
             g.DrawPath(new Pen(Color.FromArgb(128, 255, 255, 255), 2), Maps);
+
+
+            Console.WriteLine("地図描画終了");
 
 
             //↓の確認用
