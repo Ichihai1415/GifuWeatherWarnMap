@@ -84,6 +84,7 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
     <None Include="Resources\AreaForecastLocalM_prefecture_GIS_0.5.geojson" />
+    <None Include="Resources\AreaForecastLocalM_prefecture_GIS_20190125_01.geojson" />
     <None Include="Resources\AreaInformationCity_weather_GIS_0.5.geojson" />
     <None Include="Resources\AreaInformationCity_weather_GIS_0.5_Name.geojson" />
   </ItemGroup>

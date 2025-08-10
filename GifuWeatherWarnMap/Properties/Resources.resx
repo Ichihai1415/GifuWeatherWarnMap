@@ -121,6 +121,9 @@
   <data name="AreaForecastLocalM_prefecture_GIS_0_5" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\AreaForecastLocalM_prefecture_GIS_0.5.geojson;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;shift_jis</value>
   </data>
+  <data name="AreaForecastLocalM_prefecture_GIS_20190125_01" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\AreaForecastLocalM_prefecture_GIS_20190125_01.geojson;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
   <data name="AreaInformationCity_weather_GIS_0_5" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\AreaInformationCity_weather_GIS_0.5.geojson;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;shift_jis</value>
   </data>

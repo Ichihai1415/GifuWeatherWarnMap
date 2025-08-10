@@ -6,7 +6,6 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Linq;
-using System.Threading;
 using System.Windows.Forms;
 using System.Xml;
 
@@ -26,6 +25,9 @@ namespace GifuWeatherWarnMap
 
         private void MainImg_Click(object sender, EventArgs e)
         {
+            string pref = "熊本県";//タイトルに入る方
+            string pref_map = "熊本県";//mapの方
+
             //F:\色々\gifu-majorwarn-20180707.xml
             //https://www.data.jma.go.jp/developer/xml/data/20230602003308_0_VPWW54_210000.xml
             //https://www.data.jma.go.jp/developer/xml/data/20230605112014_0_VPWW53_210000.xml
@@ -59,7 +61,7 @@ namespace GifuWeatherWarnMap
                         foreach (XmlNode node in xml.SelectNodes("atom:feed/atom:entry", nsmgr))
                         {
                             Console.WriteLine($"{node.SelectSingleNode("atom:title", nsmgr).InnerText}  {node.SelectSingleNode("atom:author/atom:name", nsmgr).InnerText}");
-                            if (node.SelectSingleNode("atom:title", nsmgr).InnerText == "気象警報・注意報（Ｈ２７）" && node.SelectSingleNode("atom:author/atom:name", nsmgr).InnerText == "岐阜地方気象台")
+                            if (node.SelectSingleNode("atom:title", nsmgr).InnerText == "気象警報・注意報（Ｈ２７）" && node.SelectSingleNode("atom:content", nsmgr).InnerText.Contains(pref))
                             {
                                 string URL2 = node.SelectSingleNode("atom:id", nsmgr).InnerText;
                                 Console.WriteLine(URL2);
@@ -118,10 +120,57 @@ namespace GifuWeatherWarnMap
             }
             //35.142-36.458 ->35.8
             //136.275-137.652 ->136.96
-            double LatSta = 35.05;
-            double LatEnd = 36.55;
-            double LonSta = 136.21;
-            double LonEnd = 137.71;
+            //double LatSta = 35.05;
+            //double LatEnd = 36.55;
+            //double LonSta = 136.21;
+            //double LonEnd = 137.71;
+
+            float LatSta = 20;
+            float LatEnd = 50;
+            float LonSta = 120;
+            float LonEnd = 150;
+            JObject geojson0 = JObject.Parse(Resources.AreaForecastLocalM_prefecture_GIS_20190125_01);
+            JObject geojson1 = JObject.Parse(Resources.AreaForecastLocalM_prefecture_GIS_0_5);
+            JObject geojson2 = JObject.Parse(Resources.AreaInformationCity_weather_GIS_0_5_Name);
+            foreach (JToken json_1 in geojson0.SelectToken("features"))
+            {
+                if (json_1.SelectToken("geometry.coordinates") == null)
+                    continue;
+                if ((string)json_1.SelectToken("properties.name") != pref_map)
+                    continue;
+                if ((string)json_1.SelectToken("geometry.type") == "Polygon")
+                {
+                    foreach (JToken json_2 in json_1.SelectToken($"geometry.coordinates[0]"))
+                    {
+                        LatSta = Math.Max(LatSta, (float)json_2.SelectToken("[1]"));
+                        LatEnd = Math.Min(LatEnd, (float)json_2.SelectToken("[1]"));
+                        LonSta = Math.Max(LonSta, (float)json_2.SelectToken("[0]"));
+                        LonEnd = Math.Min(LonEnd, (float)json_2.SelectToken("[0]"));
+                        //Console.WriteLine($"{LatSta} {LatEnd} {LonSta} {LonEnd}");
+                    }
+                }
+                else
+                {
+                    foreach (JToken json_2 in json_1.SelectToken($"geometry.coordinates"))
+                    {
+                        foreach (JToken json_3 in json_2.SelectToken("[0]"))
+                        {
+                            LatSta = Math.Max(LatSta, (float)json_3.SelectToken("[1]"));
+                            LatEnd = Math.Min(LatEnd, (float)json_3.SelectToken("[1]"));
+                            LonSta = Math.Max(LonSta, (float)json_3.SelectToken("[0]"));
+                            LonEnd = Math.Min(LonEnd, (float)json_3.SelectToken("[0]"));
+                            //Console.WriteLine($"{LatSta} {LatEnd} {LonSta} {LonEnd}");
+                        }
+                    }
+                }
+            }
+            if (LatSta == 20 && LatEnd == 50 && LonSta == 120 && LonEnd == 150)
+            {
+                throw new Exception("指定された都道府県が見つかりませんでした。");
+            }
+
+            PointCorrect(ref LatSta, ref LatEnd, ref LonSta, ref LonEnd, true);
+
             int MapSize = 1080;
             double Zoom = MapSize / (LonEnd - LonSta);
 
@@ -130,7 +179,6 @@ namespace GifuWeatherWarnMap
             g.Clear(Color.FromArgb(0, 30, 60));
 
             Console.WriteLine("都道府県描画開始");
-            JObject geojson1 = JObject.Parse(Resources.AreaForecastLocalM_prefecture_GIS_0_5);
             GraphicsPath Maps = new GraphicsPath();
             Maps.Reset();
             Maps.StartFigure();
@@ -160,7 +208,6 @@ namespace GifuWeatherWarnMap
             g.DrawPath(new Pen(Color.FromArgb(128, 255, 255, 255), 4), Maps);
 
             Console.WriteLine("市区町村描画開始");
-            JObject geojson2 = JObject.Parse(Resources.AreaInformationCity_weather_GIS_0_5_Name);
             Maps = new GraphicsPath();
             Maps.Reset();
             Maps.StartFigure();
@@ -244,5 +291,63 @@ namespace GifuWeatherWarnMap
             g.Dispose();
             //throw new Exception("デバック用");
         }
+
+
+        /// <summary>
+        /// 画像描画用に緯度・経度を補正します
+        /// </summary>
+        /// <param name="latSta">緯度の始点</param>
+        /// <param name="latEnd">緯度の終点</param>
+        /// <param name="lonSta">経度の始点</param>
+        /// <param name="lonEnd">経度の終点</param>
+        /// <param name="enableCorrectMax">最大値を補正するか</param>
+        public static void PointCorrect(ref float latSta, ref float latEnd, ref float lonSta, ref float lonEnd, bool enableCorrectMax = false)
+        {
+            latSta -= (latEnd - latSta) / 20f;//差の1/20余白追加
+            latEnd += (latEnd - latSta) / 20f;
+            lonSta -= (lonEnd - lonSta) / 20f;
+            lonEnd += (lonEnd - lonSta) / 20f;
+            if (latEnd - latSta < 2f)//緯度差を最小2に
+            {
+                var correction = (2f - (latEnd - latSta)) / 2f;
+                latSta -= correction;
+                latEnd += correction;
+            }
+            if (latEnd - latSta < 2f)//経度差を最小2に
+            {
+                var correction = (2f - (lonEnd - lonSta)) / 2f;
+                lonSta -= correction;
+                lonEnd += correction;
+            }
+            if (enableCorrectMax)
+            {
+                if (latEnd - latSta > 10f) //緯度差を最大10に
+                {
+                    var correction = ((latEnd - latSta) - 10f) / 2f;
+                    latSta += correction;
+                    latEnd -= correction;
+                }
+                if (lonEnd - lonSta > 10f) //経度差を最大10に
+                {
+                    var correction = ((lonEnd - lonSta) - 10f) / 2f;
+                    lonSta += correction;
+                    lonEnd -= correction;
+                }
+            }
+
+            if (lonEnd - lonSta > latEnd - latSta)//大きいほうに合わせる
+            {
+                var correction = ((lonEnd - lonSta) - (latEnd - latSta)) / 2f;
+                latSta -= correction;
+                latEnd += correction;
+            }
+            else// if (LonEnd - LonSta < LatEnd - LatSta)
+            {
+                var correction = ((latEnd - latSta) - (lonEnd - lonSta)) / 2f;
+                lonSta -= correction;
+                lonEnd += correction;
+            }
+        }
+
     }
 }
